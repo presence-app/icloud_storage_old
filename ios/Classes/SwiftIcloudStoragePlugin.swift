@@ -120,81 +120,81 @@ public class SwiftIcloudStoragePlugin: NSObject, FlutterPlugin {
       return
     }
     
-    guard let containerURL = FileManager.default.url(forUbiquityContainerIdentifier: containerId)
-    else {
-      result(containerError)
-      return
-    }
-    DebugHelper.log("containerURL: \(containerURL.path)")
-    
-    let cloudFileURL = containerURL.appendingPathComponent(cloudFileName)
-    let localFileURL = URL(fileURLWithPath: localFilePath)
-    
-     do {
-                if !FileManager.default.fileExists(atPath: containerURL.path) {
-                    try FileManager.default.createDirectory(at: containerURL, withIntermediateDirectories: true, attributes: nil)
-                }
-                let tempFile = FileManager.default.temporaryDirectory.appendingPathComponent(localFileURL.lastPathComponent, isDirectory: false)
-                try FileManager.default.copyItem(at: localFileURL, to: tempFile)
-                _ = try FileManager.default.replaceItemAt(cloudFileURL, withItemAt: tempFile)
-                if !watchUpdate { result(nil) }
-            } catch {
-                result(nativeCodeError(error))
-            }
+   guard let containerURL = FileManager.default.url(forUbiquityContainerIdentifier: containerId)
+           else {
+               result(containerError)
+               return
+           }
+           DebugHelper.log("containerURL: \(containerURL.path)")
 
-            if watchUpdate, let messenger = self.messenger {
-                let query = NSMetadataQuery.init()
-                query.operationQueue = .main
-                query.searchScopes = [NSMetadataQueryUbiquitousDataScope]
-                query.predicate = NSPredicate(format: "%K == %@", NSMetadataItemPathKey, cloudFileURL.path)
+           let cloudFileURL = containerURL.appendingPathComponent(cloudFileName)
+           let localFileURL = URL(fileURLWithPath: localFilePath)
 
-                let uploadEventChannel = FlutterEventChannel(name: "icloud/event/upload/\(cloudFileName)", binaryMessenger: messenger)
-                let uploadStreamHandler = StreamHandler()
-                uploadStreamHandler.onCancelHandler = { [self] in
-                    removeObservers(query)
-                    query.stop()
-                }
-                uploadEventChannel.setStreamHandler(uploadStreamHandler)
-                addUploadObservers(query: query, streamHandler: uploadStreamHandler)
+           do {
+               if !FileManager.default.fileExists(atPath: containerURL.path) {
+                   try FileManager.default.createDirectory(at: containerURL, withIntermediateDirectories: true, attributes: nil)
+               }
+               let tempFile = FileManager.default.temporaryDirectory.appendingPathComponent(localFileURL.lastPathComponent, isDirectory: false)
+               try FileManager.default.copyItem(at: localFileURL, to: tempFile)
+               _ = try FileManager.default.replaceItemAt(cloudFileURL, withItemAt: tempFile)
+               if !watchUpdate { result(nil) }
+           } catch {
+               result(nativeCodeError(error))
+           }
 
-                result(nil)
-                query.start()
-            }
-        }
-  
-  private func addUploadObservers(query: NSMetadataQuery, eventChannelName: String) {
-    NotificationCenter.default.addObserver(forName: NSNotification.Name.NSMetadataQueryDidFinishGathering, object: query, queue: query.operationQueue) { [self] (notification) in
-      onUploadQueryNotification(query: query, eventChannelName: eventChannelName)
-    }
-    
-    NotificationCenter.default.addObserver(forName: NSNotification.Name.NSMetadataQueryDidUpdate, object: query, queue: query.operationQueue) { [self] (notification) in
-      onUploadQueryNotification(query: query, eventChannelName: eventChannelName)
-    }
-  }
-  
-   private func onUploadQueryNotification(query: NSMetadataQuery, streamHandler: StreamHandler) {
-          if query.results.count == 0 {
-              return
-          }
+           if watchUpdate, let messenger = self.messenger {
+               let query = NSMetadataQuery.init()
+               query.operationQueue = .main
+               query.searchScopes = [NSMetadataQueryUbiquitousDataScope]
+               query.predicate = NSPredicate(format: "%K == %@", NSMetadataItemPathKey, cloudFileURL.path)
 
-          guard let fileItem = query.results.first as? NSMetadataItem else { return }
-          guard let fileURL = fileItem.value(forAttribute: NSMetadataItemURLKey) as? URL else { return }
-          guard let fileURLValues = try? fileURL.resourceValues(forKeys: [.ubiquitousItemIsUploadingKey]) else { return}
-          guard let isUploading = fileURLValues.ubiquitousItemIsUploading else { return }
+               let uploadEventChannel = FlutterEventChannel(name: "icloud/event/upload/\(cloudFileName)", binaryMessenger: messenger)
+               let uploadStreamHandler = StreamHandler()
+               uploadStreamHandler.onCancelHandler = { [self] in
+                   removeObservers(query)
+                   query.stop()
+               }
+               uploadEventChannel.setStreamHandler(uploadStreamHandler)
+               addUploadObservers(query: query, streamHandler: uploadStreamHandler)
 
-          if let error = fileURLValues.ubiquitousItemUploadingError {
-              streamHandler.setEvent(nativeCodeError(error))
-              return
-          }
+               result(nil)
+               query.start()
+           }
+       }
 
-          if let progress = fileItem.value(forAttribute: NSMetadataUbiquitousItemPercentUploadedKey) as? Double {
-              streamHandler.setEvent(progress)
-          }
+       private func addUploadObservers(query: NSMetadataQuery, streamHandler: StreamHandler) {
+           NotificationCenter.default.addObserver(forName: NSNotification.Name.NSMetadataQueryDidFinishGathering, object: query, queue: query.operationQueue) { [self] (notification) in
+               onUploadQueryNotification(query: query, streamHandler: streamHandler)
+           }
 
-          if !isUploading {
-              streamHandler.setEvent(FlutterEndOfEventStream)
-          }
-      }
+           NotificationCenter.default.addObserver(forName: NSNotification.Name.NSMetadataQueryDidUpdate, object: query, queue: query.operationQueue) { [self] (notification) in
+               onUploadQueryNotification(query: query, streamHandler: streamHandler)
+           }
+       }
+
+       private func onUploadQueryNotification(query: NSMetadataQuery, streamHandler: StreamHandler) {
+           if query.results.count == 0 {
+               return
+           }
+
+           guard let fileItem = query.results.first as? NSMetadataItem else { return }
+           guard let fileURL = fileItem.value(forAttribute: NSMetadataItemURLKey) as? URL else { return }
+           guard let fileURLValues = try? fileURL.resourceValues(forKeys: [.ubiquitousItemIsUploadingKey]) else { return}
+           guard let isUploading = fileURLValues.ubiquitousItemIsUploading else { return }
+
+           if let error = fileURLValues.ubiquitousItemUploadingError {
+               streamHandler.setEvent(nativeCodeError(error))
+               return
+           }
+
+           if let progress = fileItem.value(forAttribute: NSMetadataUbiquitousItemPercentUploadedKey) as? Double {
+               streamHandler.setEvent(progress)
+           }
+
+           if !isUploading {
+               streamHandler.setEvent(FlutterEndOfEventStream)
+           }
+       }
   
   private func download(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
     guard let args = call.arguments as? Dictionary<String, Any>,
