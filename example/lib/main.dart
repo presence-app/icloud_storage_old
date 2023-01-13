@@ -57,11 +57,11 @@ class _MyHomePageState extends State<MyHomePage> {
     print("Fetching a sample file from the web... please wait.");
     Response response = await dio.download(
       //  64KB image - use this link to test with small filesize
-        'https://res.cloudinary.com/dornu6mmy/image/upload/v1637745528/POSTS/l9flihokyfchdjauhgkz.jpg',
+        // 'https://res.cloudinary.com/dornu6mmy/image/upload/v1637745528/POSTS/l9flihokyfchdjauhgkz.jpg',
         // 2.1MB image - use this link to test with medium filesize
-         //  'https://images.unsplash.com/flagged/photo-1568164017397-00f2cec55c97?ixlib=rb-4.0.3&q=80&fm=jpg&crop=entropy&cs=tinysrgb',
+           'https://images.unsplash.com/flagged/photo-1568164017397-00f2cec55c97?ixlib=rb-4.0.3&q=80&fm=jpg&crop=entropy&cs=tinysrgb',
         // 21MB pic
-        //  'https://images.pexels.com/photos/1168742/pexels-photo-1168742.jpeg',
+       //   'https://images.pexels.com/photos/1168742/pexels-photo-1168742.jpeg',
         filePath);
     if (response.statusCode == 200){
       print("File fetched from web successfully: ${File(filePath).lengthSync()} bytes");
@@ -98,10 +98,17 @@ class _MyHomePageState extends State<MyHomePage> {
 */
 
   void uploadToiCloud() async {
-    // isIOS16 is forced to true, we should instead fetch the system version via plugin and
-    // assign to this var the correct value.
+    // isIOS16 is forced to true for testing purpose,
+    // we should instead fetch the system version via device_info_plus plugin and
+    // assign to it the correct value.
+    // Also, fake_progress_increment is set to a generic 30.0.
+    // We should instead get the file Size and set the incremenent accordingly:
+    // The bigger the file and the smaller the increment, because
+    // the file will take longer to upload and we want that the
+    // progress percentage is credible (don't go too fast or too slow)
     var isIOS16 = true;
     var fake_progress = 0.0;
+    var fake_progress_increment = 30.0;
     final destinationPath = await getTemporaryDirectory();
 
     await ICloudStorage.upload(
@@ -115,9 +122,11 @@ class _MyHomePageState extends State<MyHomePage> {
                 print('Upload File Progress: $progress');
                 }
                 else {
-                  // if file is small, progress might directly print 100.0
-                  print('Upload File Progress: $fake_progress');
-                  fake_progress = fake_progress + 30.0;
+                  if (fake_progress < 100.0){
+                    // if file is small, progress might directly print 100.0
+                    print('Upload File Progress fake: $fake_progress');
+                    fake_progress = fake_progress + fake_progress_increment;
+                  }
                 }
               },
           onDone: () {

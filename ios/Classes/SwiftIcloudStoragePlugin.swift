@@ -122,6 +122,7 @@ public class SwiftIcloudStoragePlugin: NSObject, FlutterPlugin {
       return
     }
 
+
     guard let containerURL = FileManager.default.url(forUbiquityContainerIdentifier: containerId)
     else {
       result(containerError)
@@ -178,47 +179,62 @@ public class SwiftIcloudStoragePlugin: NSObject, FlutterPlugin {
 
   private func onUploadQueryNotification(query: NSMetadataQuery, eventChannelName: String) {
             if query.results.count == 0 { return }
-   	          guard let fileItem = query.results.first as? NSMetadataItem else { return }
-                guard let fileURL = fileItem.value(forAttribute: NSMetadataItemURLKey) as? URL else { return }
-                guard let fileURLValues = try? fileURL.resourceValues(forKeys: [.ubiquitousItemUploadingErrorKey]) else { return }
-                guard let streamHandler = self.streamHandlers[eventChannelName] else { return }
-
-                if let error = fileURLValues.ubiquitousItemUploadingError {
-                  streamHandler.setEvent(nativeCodeError(error))
-                  return
-                }
+   	        guard let fileItem = query.results.first as? NSMetadataItem else { return }
+            guard let fileURL = fileItem.value(forAttribute: NSMetadataItemURLKey) as? URL else { return }
+            guard let fileURLValues = try? fileURL.resourceValues(forKeys: [.ubiquitousItemUploadingErrorKey]) else { return }
+            guard let streamHandler = self.streamHandlers[eventChannelName] else { return }
+          //  guard let fileSize = fileItem.value(forAttribute: NSMetadataItemFSSizeKey) as? URL else { return }
 
 
-              var complete_percentage = 100 as Double
-              var isIos16 = false
-              // Fix upload progress bug on ios16: file uploads entirely but progress stalls at 95%
-              // For ios 16 and ios versions above complete percentage is forced to 95%
-              if #available(iOS 16, *) {
+            if let error = fileURLValues.ubiquitousItemUploadingError {
+                streamHandler.setEvent(nativeCodeError(error))
+                return
+            }
+
+            // BUG Fix: we need a timer to force onDone for upload progress when it stalls on IOS16
+            // Timer is calculated based on fileSize, 1.2sec for each 1MB.
+            var UploadTimer = 0.0
+            //  Get fileSize
+            do {
+                let resources = try
+                fileURL.resourceValues(forKeys:[.fileSizeKey])
+                let fileSize = resources.fileSize!
+                UploadTimer = Double (fileSize/1000000) // in MB
+                UploadTimer = UploadTimer * 1.2 // 1.2sec for each 1MB
+                print ("\(fileSize)")
+
+            } catch {
+                print("Error: \(error)")
+            }
+
+            var complete_percentage = 100 as Double
+            var isIos16 = false
+            // We need to know if system is iOS16 to fix a bug by which
+            // file uploads entirely but progress stalls at 0% or 95%
+            // For ios 16 we will force progress onDone
+            if #available(iOS 16, *) {
                isIos16 = true
-              }
+            }
 
-              if var progress = fileItem.value(forAttribute: NSMetadataUbiquitousItemPercentUploadedKey) as? Double {
-                    streamHandler.setEvent(progress)
-              if (progress == complete_percentage) {
-                  streamHandler.setEvent(FlutterEndOfEventStream)
-                  removeStreamHandler(eventChannelName)
-              }
-                  // Fix bug: On iOS16, progress might stuck at zero,
-                  // if so we force complete download after 10sec
-                  if (progress == 0 && isIos16 == true) {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
-                      streamHandler.setEvent(FlutterEndOfEventStream)
-                      self.removeStreamHandler(eventChannelName)
-                    }
-                 }
-                 // Fix bug: On iOS16 progress might stuck at 95%.
-                 // if so we force complete download after 3sec
-                 if (progress == 95 && isIos16 == true) {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                      streamHandler.setEvent(FlutterEndOfEventStream)
-                      self.removeStreamHandler(eventChannelName)
-                    }
-                 }
+            if var progress = fileItem.value(forAttribute: NSMetadataUbiquitousItemPercentUploadedKey) as? Double {
+                streamHandler.setEvent(progress)
+            if (progress == complete_percentage) {
+                streamHandler.setEvent(FlutterEndOfEventStream)
+                removeStreamHandler(eventChannelName)
+            }
+            // Fix bug: On iOS16, progress might stuck,
+            // if so, we force complete download after [UploadTimer]
+            // this guarantees that process end accordingly to file size
+            // since that [UploadTimer] is calculated based on file size
+                if (isIos16 == true) {
+                //Timer is used ot force quit the upload
+                DispatchQueue.main.asyncAfter(deadline: .now() + UploadTimer) {
+                streamHandler.setEvent(FlutterEndOfEventStream)
+                self.removeStreamHandler(eventChannelName)
+                }
+            }
+            // end bug fix
+
          }
      }
 
