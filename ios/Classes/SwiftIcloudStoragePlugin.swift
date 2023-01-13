@@ -206,7 +206,7 @@ public class SwiftIcloudStoragePlugin: NSObject, FlutterPlugin {
                   // Fix bug: On iOS16, progress might stuck at zero,
                   // if so we force complete download after 10sec
                   if (progress == 0 && isIos16 == true) {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
                       streamHandler.setEvent(FlutterEndOfEventStream)
                       self.removeStreamHandler(eventChannelName)
                     }

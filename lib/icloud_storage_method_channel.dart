@@ -28,13 +28,13 @@ class MethodChannelICloudStorage extends ICloudStoragePlatform {
           .receiveBroadcastStream()
           .where((event) => event is List)
           .map<List<ICloudFile>>((event) => _mapFilesFromDynamicList(
-              List<Map<dynamic, dynamic>>.from(event)));
+          List<Map<dynamic, dynamic>>.from(event)));
 
       onUpdate(stream);
     }
 
     final mapList =
-        await methodChannel.invokeListMethod<Map<dynamic, dynamic>>('gather', {
+    await methodChannel.invokeListMethod<Map<dynamic, dynamic>>('gather', {
       'containerId': containerId,
       'eventChannelName': eventChannelName,
     });
@@ -152,7 +152,7 @@ class MethodChannelICloudStorage extends ICloudStoragePlatform {
 
   /// Private method to generate event channel names
   String _generateEventChannelName(String eventType, String containerId,
-          [String? additionalIdentifier]) =>
+      [String? additionalIdentifier]) =>
       [
         'icloud_storage',
         'event',

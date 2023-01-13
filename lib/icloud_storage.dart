@@ -186,8 +186,8 @@ class ICloudStorage {
       containerId: containerId,
       fromRelativePath: relativePath,
       toRelativePath:
-          relativePath.substring(0, relativePath.lastIndexOf('/') + 1) +
-              newName,
+      relativePath.substring(0, relativePath.lastIndexOf('/') + 1) +
+          newName,
     );
   }
 

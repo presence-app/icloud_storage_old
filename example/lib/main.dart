@@ -57,9 +57,9 @@ class _MyHomePageState extends State<MyHomePage> {
     print("Fetching a sample file from the web... please wait.");
     Response response = await dio.download(
       //  64KB image - use this link to test with small filesize
-        //'https://res.cloudinary.com/dornu6mmy/image/upload/v1637745528/POSTS/l9flihokyfchdjauhgkz.jpg',
+        'https://res.cloudinary.com/dornu6mmy/image/upload/v1637745528/POSTS/l9flihokyfchdjauhgkz.jpg',
         // 2.1MB image - use this link to test with medium filesize
-           'https://images.unsplash.com/flagged/photo-1568164017397-00f2cec55c97?ixlib=rb-4.0.3&q=80&fm=jpg&crop=entropy&cs=tinysrgb',
+         //  'https://images.unsplash.com/flagged/photo-1568164017397-00f2cec55c97?ixlib=rb-4.0.3&q=80&fm=jpg&crop=entropy&cs=tinysrgb',
         // 21MB pic
         //  'https://images.pexels.com/photos/1168742/pexels-photo-1168742.jpeg',
         filePath);
@@ -98,6 +98,8 @@ class _MyHomePageState extends State<MyHomePage> {
 */
 
   void uploadToiCloud() async {
+    // isIOS16 is forced to true, we should instead fetch the system version via plugin and
+    // assign to this var the correct value.
     var isIOS16 = true;
     var fake_progress = 0.0;
     final destinationPath = await getTemporaryDirectory();
@@ -113,8 +115,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 print('Upload File Progress: $progress');
                 }
                 else {
-                print('Upload File Progress: $fake_progress');
-                fake_progress = fake_progress + 25.0;
+                  // if file is small, progress might directly print 100.0
+                  print('Upload File Progress: $fake_progress');
+                  fake_progress = fake_progress + 30.0;
                 }
               },
           onDone: () {
