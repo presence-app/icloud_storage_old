@@ -192,7 +192,7 @@ public class SwiftIcloudStoragePlugin: NSObject, FlutterPlugin {
             }
 
             // BUG Fix: we need a timer to force onDone for upload progress when it stalls on IOS16
-            // Timer is calculated based on fileSize, 1.2sec for each 1MB.
+            // Timer is calculated based on fileSize, 300ms for each 1MB.
             var UploadTimer = 0.0
             //  Get fileSize
             do {
@@ -200,7 +200,7 @@ public class SwiftIcloudStoragePlugin: NSObject, FlutterPlugin {
                 fileURL.resourceValues(forKeys:[.fileSizeKey])
                 let fileSize = resources.fileSize!
                 UploadTimer = Double (fileSize/1000000) // in MB
-                UploadTimer = UploadTimer * 1.2 // 1.2sec for each 1MB
+                UploadTimer = UploadTimer * 0.3 // 300ms for each 1MB
                 print ("\(fileSize)")
 
             } catch {
