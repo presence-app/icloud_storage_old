@@ -48,7 +48,7 @@
 
 	<key>NSUbiquitousContainers</key>
         <dict>
-            <key>iCloud.com.presence.app</key>
+            <key>WRITE_HERE_YOUR_CONTAINER_ID</key>
             <dict>
                 <key>NSUbiquitousContainerIsDocumentScopePublic</key>
                 <false/>
