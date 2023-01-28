@@ -53,7 +53,7 @@
                 <key>NSUbiquitousContainerIsDocumentScopePublic</key>
                 <false/>
                 <key>NSUbiquitousContainerName</key>
-                <string>PresenceCloudBackup</string>
+                <string>Presence</string>
                 <key>NSUbiquitousContainerSupportedFolderLevels</key>
                 <string>Any</string>
             </dict>

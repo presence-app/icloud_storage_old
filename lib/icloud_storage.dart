@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
+
 import 'icloud_storage_platform_interface.dart';
 import 'models/exceptions.dart';
 import 'models/icloud_file.dart';
@@ -46,15 +48,24 @@ class ICloudStorage {
   static Future<void> upload({
     required String containerId,
     required String filePath,
-    String? destinationRelativePath,
+    //String? destinationRelativePath,
+    required destinationRelativePath,
     StreamHandler<double>? onProgress,
   }) async {
     if (filePath.trim().isEmpty) {
       throw InvalidArgumentException('invalid filePath');
     }
 
-    final destination = destinationRelativePath ?? filePath.split('/').last;
-
+    // final destination = destinationRelativePath ?? filePath.split('/').last;
+    // final destination = destinationRelativePath;
+    // debugPrint("destinationRelativePath: $destinationRelativePath");
+    //Fix upload to subfolder
+    var parts = destinationRelativePath.split('Documents/');
+   // Since our local files are saved to Docuemnts root we split after "Documents/"
+    final destination = parts.sublist(1).join('Documents').trim();
+    //end Fix
+    debugPrint("destination: $destination");
+    //if (!_validateRelativePath("Documents"+destination)) {
     if (!_validateRelativePath(destination)) {
       throw InvalidArgumentException('invalid destination relative path');
     }

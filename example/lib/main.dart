@@ -51,7 +51,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   void downloadfile() async {
-    final tempDir = await getTemporaryDirectory();
+   // final tempDir = await getTemporaryDirectory();
+    final tempDir = await getApplicationDocumentsDirectory();
     String filePath = '${tempDir.path}/image.jpg';
     final dio = Dio();
     print("Fetching a sample file from the web... please wait.");
@@ -109,11 +110,13 @@ class _MyHomePageState extends State<MyHomePage> {
     var isIOS16 = true;
     var fake_progress = 0.0;
     var fake_progress_increment = 30.0;
-    final destinationPath = await getTemporaryDirectory();
+    // final destinationPath = await getTemporaryDirectory();
+    final destinationPath = await getApplicationDocumentsDirectory();
 
     await ICloudStorage.upload(
       containerId: containerId,
       filePath: '${destinationPath.path}/image.jpg',
+      destinationRelativePath: '${destinationPath.path}/2/image.jpg',
       onProgress: (stream) {
         stream.listen(
               (progress) {
@@ -147,7 +150,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> downloadiCloudFile() async {
     try {
-      final tempDir = await getTemporaryDirectory();
+      //final tempDir = await getTemporaryDirectory();
+      final tempDir = await getApplicationDocumentsDirectory();
       await ICloudStorage.download(
         containerId: containerId,
         relativePath: 'image.jpg',
@@ -192,7 +196,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> deleteFileLocally() async {
     // delete file from local device
-    final tempDir = await getTemporaryDirectory();
+   // final tempDir = await getTemporaryDirectory();
+    final tempDir = await getApplicationDocumentsDirectory();
     try {
       await File('${tempDir.path}/image.jpg').delete();
       print('File Deleted from local storage');
@@ -203,7 +208,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   Future<void> checkFile() async {
-    final tempDir = await getTemporaryDirectory();
+ //   final tempDir = await getTemporaryDirectory();
+    final tempDir = await getApplicationDocumentsDirectory();
     String filepath = "${tempDir.path}/image.jpg";
     print(await File(filepath).exists());
     if (await File(filepath).exists()==true){
